@@ -1,5 +1,5 @@
 """The card on the left: everything about the box (or architecture component) you are pointing at."""
-import from "lucide-react" { Sparkles, CodeXml, ArrowUpLeft, Layers, Workflow, GitCommitHorizontal, MapPin, FileDiff }
+import from "lucide-react" { Sparkles, CodeXml, ArrowUpLeft, Layers, Workflow, GitCommitHorizontal, MapPin, FileDiff, GitPullRequest, CircleCheck, CircleX, CircleDashed, Copy }
 import from ..indexer.model { BoxInfo, SymbolInfo }
 import from ..architect.model { ArchModel, ArchComponent, ArchFlow, ModuleArch }
 import from .theme { role_rgb, fmt_count, eco_label }
@@ -293,3 +293,58 @@ def:pub CommitCard(
     </div>
 }
 
+def:pub PRCard(
+    detail: any,
+    onShowOnMap: Callable[[list[str]], None],
+    onAsk: Callable[[str], None]
+) -> JsxElement {
+    has showAllChecks: bool = False;
+    sm = detail["summary"];
+    checks: list[any] = detail["checks"] or [];
+    failed = [c for c in checks if c["state"] == "failure"];
+    passed = len([c for c in checks if c["state"] == "success"]);
+    pending = len([c for c in checks if c["state"] == "pending"]);
+    listed = checks if showAllChecks else (failed + [c for c in checks if c["state"] == "pending"])[:12];
+    ids = [f["box_id"] for f in detail["files"] if f["box_id"]];
+    comps = ", ".join([c["name"] for c in detail["components"][:6]]);
+    label = ("#" + str(sm["number"])) if sm["number"] > 0 else sm["branch"];
+    body = String(detail["body"] or "").strip();
+    <div className="card">
+        <div className="card-glow" style={card_glow("52,211,153")} />
+        <div key={sm["ref"]} className="card-inner">
+            <div>
+                <div className="card-kicker"><GitPullRequest size={13} />{("pull request " + label) if sm["number"] > 0 else "branch"}</div>
+                <div className="card-title" style={{"marginTop": "6px", "fontSize": "16px"}}>{sm["title"]}</div>
+                <div className="card-path">{sm["author"] + " · " + sm["branch"] + " → " + sm["base"] + " · " + sm["rel"]}</div>
+            </div>
+            <div className="chips">
+                {sm["draft"] and <span className="chip">draft</span>}
+                {sm["review"] and <span className={"chip rv-badge " + sm["review"]}>{"review: " + sm["review"]}</span>}
+                <span className="chip"><span style={{"color": "var(--ok)"}}>{"+" + str(sm["additions"])}</span>{" "}<span style={{"color": "var(--bad)"}}>{"−" + str(sm["deletions"])}</span></span>
+            </div>
+            {len(checks) > 0 and <div className="sec">
+                <h5>Checks</h5>
+                <div className="rv-checks-sum">
+                    <span className="ok"><CircleCheck size={13} />{str(passed) + " passed"}</span>
+                    {len(failed) > 0 and <span className="bad"><CircleX size={13} />{str(len(failed)) + " failed"}</span>}
+                    {pending > 0 and <span className="pend"><CircleDashed size={13} />{str(pending) + " running"}</span>}
+                    <span className="spacer" />
+                    <button className="link-btn" onClick={lambda (e: MouseEvent) { showAllChecks = not showAllChecks; }}>{"hide" if showAllChecks else "all"}</button>
+                </div>
+                <div className="list">
+                    {for (i, c) in enumerate(listed) {
+                        <div key={str(i)} className={"rv-check " + c["state"]}>{c["name"]}</div>
+                    }}
+                </div>
+            </div>}
+            {body and <div className="sec">
+                <h5>Description</h5>
+                <div className="card-text rv-body">{body[:4000]}</div>
+            </div>}
+            <div className="actions">
+                {len(ids) > 0 and <button className="btn-grad" onClick={lambda (e: MouseEvent) { onShowOnMap(ids + detail["boxes"]); }}><MapPin size={13} />Show on map</button>}
+                <button className="chip-btn" onClick={lambda (e: MouseEvent) { onAsk("Review " + ("pull request #" + str(sm["number"]) if sm["number"] > 0 else "branch " + sm["branch"]) + " (" + sm["title"] + ") against " + sm["base"] + ". It touches: " + (comps or "files outside the mapped architecture") + ". Read the diff (" + ("gh pr diff " + str(sm["number"]) if sm["number"] > 0 else "git diff " + sm["base"] + "..." + sm["branch"]) + "), then tell me what it changes architecturally, risks for the " + str(detail["dependents"]) + " dependent modules, and anything that should block merging."); }}><Sparkles size={13} />Ask agent to review</button>
+            </div>
+        </div>
+    </div>
+}
