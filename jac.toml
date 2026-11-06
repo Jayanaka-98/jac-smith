@@ -1,0 +1,70 @@
+[project]
+name = "jac-smith"
+version = "0.1.0"
+description = "jac smith: an architecture-first, agent-first IDE"
+entry-point = "main"
+kind = "desktop"
+jac-version = "==0.37.25"
+
+[dependencies]
+[dependencies.npm]
+react = "^19.2.0"
+react-dom = "^19.2.0"
+react-router-dom = "^6.22.0"
+react-error-boundary = "^5.0.0"
+"@tanstack/react-form" = "^1.33.0"
+zod = "^4.3.6"
+"@xyflow/react" = "^12.3.6"
+"@dagrejs/dagre" = "^1.1.4"
+"@xterm/xterm" = "^5.5.0"
+"@xterm/addon-fit" = "^0.10.0"
+"@xterm/addon-web-links" = "^0.11.0"
+lucide-react = "^0.460.0"
+"@uiw/react-codemirror" = "^4.23.0"
+"@codemirror/lang-python" = "^6.1.6"
+"@codemirror/lang-javascript" = "^6.2.2"
+"@codemirror/view" = "^6.34.0"
+
+[dependencies.npm.dev]
+vite = "^6.4.1"
+"@vitejs/plugin-react" = "^4.7.0"
+typescript = "^5.3.3"
+"@types/react" = "^19.2.0"
+"@types/react-dom" = "^19.2.0"
+
+
+
+[dev-dependencies]
+[dev-dependencies.pypi]
+watchdog = ">=3.0.0"
+
+
+[client]
+
+[desktop]
+name = "jac-smith"
+identifier = "org.jaseci.jac-smith"
+version = "0.1.0"
+
+[desktop.window]
+title = "jac smith"
+width = 1480
+height = 920
+min_width = 1100
+min_height = 680
+resizable = true
+
+# The UI only reads its session token (~/.jac-smith/session.token) through the native bridge.
+[desktop.plugins]
+fs = { allow_read = ["$HOME/.jac-smith"], allow_write = [] }
+shell = false
+path = true
+window = true
+notification = true
+dialog = true
+clipboard = { allow_read = true, allow_write = true }
+
+# Browser-only helpers with no JSX of their own: keep them in the client bundle.
+[placement.pins]
+"ui.cache" = "client"
+"ui.rpc" = "client"
