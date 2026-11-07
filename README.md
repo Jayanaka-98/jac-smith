@@ -18,6 +18,8 @@ dashed boxes. The same index drives two views and a coding agent:
   reported. Zooming in leads back to the modules.
 - **History view**: git history drawn like a git tree rotated 90 degrees. The trunk (main) is the
   top line, commits are blobs along it, and branches hang below it, forking off and merging back.
+- **Review view**: open pull requests (via the GitHub CLI), and for each one the architecture
+  components it lands in, the modules that depend on what it edits, and per-file diffs.
 - **Agent hub**: always scoped to what you're focused on. Gemini over ACP, Codex (`codex exec`),
   Claude (`claude -p`), or the Jac byLLM agent with tools that read the architecture graph, read,
   search and write files, run `jac check`, and load Jac skills via `jac guide`. Boxes it reads light
@@ -36,9 +38,10 @@ Every panel is resizable, and the theme (midnight, graphite, daylight) is set in
 | `architect/` | Architecture discovery and maintenance: templates, the hybrid engine, Jev placement, module mapping, drift. |
 | `agent/`, `agents/` | The byLLM Jac agent and its tools; the agent hub (ACP client, Codex/Claude runners, permission requests). |
 | `history/` | Commit graph, timeline lanes, commit details and diffs. |
+| `review/` | Pull requests and their impact on boxes and architecture components. |
 | `settings/` | Credentials, model and theme settings, ChatGPT sign-in via the official Codex CLI, and the session token. |
 | `terminal/` | PTY sessions, long-polled by byte offset (the desktop host buffers streamed responses). |
-| `ui/` | Client components: `Shell`, `BoxView`, `CodeView`, `ArchView`, `TimelineView`, `DetailCard`, `AgentPanel`, `Terminal`, `SettingsPanel`. |
+| `ui/` | Client components: `Shell`, `BoxView`, `CodeView`, `ArchView`, `TimelineView`, `ReviewView`, `DetailCard`, `AgentPanel`, `Terminal`, `SettingsPanel`. |
 
 ## Run
 
@@ -47,7 +50,7 @@ jac install          # Python + npm deps
 jac run              # build if needed, then open the desktop window
 jac run --dev        # hot reload
 jac build            # .jac/client/desktop/jac-smith.app
-jac test -d tests/   # indexer, architecture, agent hub, history, PTY tests
+jac test -d tests/   # indexer, architecture, agent hub, history, review, PTY tests
 ```
 
 ## Keys and accounts

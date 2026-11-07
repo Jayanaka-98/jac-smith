@@ -1,6 +1,6 @@
 """App shell: top bar, the detail card on the left, the two views, terminal, and the agent."""
 import from "react" { useEffect }
-import from "lucide-react" { FolderOpen, Boxes, Workflow, Terminal as TerminalIcon, Settings2, ChevronRight, LoaderCircle, PanelLeft, GitBranch }
+import from "lucide-react" { FolderOpen, Boxes, Workflow, Terminal as TerminalIcon, Settings2, ChevronRight, LoaderCircle, PanelLeft, GitBranch, GitPullRequest }
 import from ..indexer.model { BoxFrame, BoxInfo, Crumb, IndexSummary, SettingsStatus }
 import from ..architect.model { ArchModel, ArchComponent }
 import from .rpc { rpc }
@@ -8,7 +8,8 @@ import from .cache { cached_frame, prefetch, clear_cache }
 import from .theme { ROLE_ORDER, role_rgb, fmt_count }
 import from .BoxView { BoxView }
 import from .ArchView { ArchView }
-import from .DetailCard { BoxCard, ComponentCard, ProjectCard, CommitCard }
+import from .DetailCard { BoxCard, ComponentCard, ProjectCard, CommitCard, PRCard }
+import from .ReviewView { ReviewView }
 import from .TimelineView { TimelineView }
 import from .AgentPanel { AgentPanel }
 import from .AgentBlob { AgentBlob }
@@ -47,6 +48,10 @@ def:pub Shell() -> JsxElement {
     has histCommit: str = "";
     has commitDetail: any = None;
     has diffPath: str = "";
+    has prRef: str = "";
+    has prDetail: any = None;
+    has prDiff: str = "";
+    has prLatest: Ref[str] = Ref("");
     has archModule: BoxInfo | None = None;
 
     def aspect() -> float {
@@ -76,6 +81,16 @@ def:pub Shell() -> JsxElement {
         diffPath = "";
         commitDetail = None;
         commitDetail = await rpc("git_commit", {"sha": sha});
+    }
+    async def select_pr(ref: str) {
+        prRef = ref;
+        prLatest.current = ref;
+        prDiff = "";
+        prDetail = None;
+        found = await rpc("review_pr", {"ref": ref});
+        if prLatest.current == ref {
+            prDetail = found;
+        }
     }
     def show_on_map(ids: list[str]) {
         touched = ids;
@@ -334,10 +349,11 @@ def:pub Shell() -> JsxElement {
                 <button className="chip-btn" onClick={lambda (e: MouseEvent) { open_project(projectPath); }}>Open</button>
             </div>
             <div className="switch">
-                <span className="knob" style={{"transform": "translateX(" + ("0" if view == "developer" else ("112px" if view == "architecture" else "224px")) + ")"}} />
+                <span className="knob" style={{"transform": "translateX(" + ("0" if view == "developer" else ("112px" if view == "architecture" else ("224px" if view == "history" else "336px"))) + ")"}} />
                 <button className={"on" if view == "developer" else ""} onClick={lambda (e: MouseEvent) { view = "developer"; }}><Boxes size={14} />Developer</button>
                 <button className={"on" if view == "architecture" else ""} onClick={lambda (e: MouseEvent) { view = "architecture"; }}><Workflow size={14} />Architecture</button>
                 <button className={"on" if view == "history" else ""} onClick={lambda (e: MouseEvent) { view = "history"; }}><GitBranch size={14} />History</button>
+                <button className={"on" if view == "review" else ""} onClick={lambda (e: MouseEvent) { view = "review"; }}><GitPullRequest size={14} />Review</button>
             </div>
             <span className="spacer" />
             {summary and <span className="stat">{fmt_count(summary.modules) + " modules · " + fmt_count(summary.loc) + " loc · " + str(summary.externals) + " externals"}</span>}
@@ -347,7 +363,13 @@ def:pub Shell() -> JsxElement {
         </header>
         <div className="workspace">
             {sizes["left"] > 0 and <aside className="side" style={{"width": str(sizes["left"]) + "px"}}>
-                {if view == "history" {
+                {if view == "review" {
+                    if prDetail and prDetail["ok"] and prDetail["summary"] {
+                        <PRCard detail={prDetail} onShowOnMap={show_on_map} onAsk={ask} />
+                    } else {
+                        <ProjectCard title="Review" text="Open pull requests and what they change: the architecture components each one lands in, how many modules depend on what it edits, and every file's diff. Ask the agent for a review from here." />
+                    }
+                } elif view == "history" {
                     if commitDetail and commitDetail["ok"] {
                         <CommitCard detail={commitDetail} diffPath={diffPath} onDiff={lambda (pth: str) { diffPath = pth; }} onShowOnMap={show_on_map} onNavigate={lambda (bid: str) { navigate(bid); }} onAsk={ask} />
                     } else {
@@ -393,6 +415,8 @@ def:pub Shell() -> JsxElement {
                         <div className="empty"><h2 className="shimmer-text">Reading the architecture</h2><p>{loading}</p></div>
                     } elif frame is None {
                         <div className="empty"><h2>Open a project</h2><p>Type a folder path above and press Enter.</p></div>
+                    } elif view == "review" {
+                        <ReviewView projectKey={projectKey} selected={prRef} detail={prDetail} diffPath={prDiff} onSelect={lambda (r: str) { select_pr(r); }} onDiff={lambda (pth: str) { prDiff = pth; }} onNavigate={lambda (bid: str) { navigate(bid); }} />
                     } elif view == "history" {
                         <TimelineView projectKey={projectKey} selected={histCommit} diffPath={diffPath} onSelect={lambda (sha: str) { select_commit(sha); }} onCloseDiff={lambda { diffPath = ""; }} />
                     } elif view == "developer" {

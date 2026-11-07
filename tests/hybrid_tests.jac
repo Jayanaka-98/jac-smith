@@ -29,7 +29,7 @@ test "skeleton from placements, then a codex refinement that forgets one subsyst
     assert p is not None;
     tpl = template_by_id("ide");
     assert tpl is not None;
-    slots = {"ui": "ui", "indexer": "analysis", "architect": "analysis", "agent": "ai", "settings": "platform", "terminal": "platform", "history": "analysis", "agents": "ai"};
+    slots = {"ui": "ui", "indexer": "analysis", "architect": "analysis", "agent": "ai", "settings": "platform", "terminal": "platform", "history": "analysis", "review": "analysis", "agents": "ai"};
     subs = [Subsystem(id=k, modules=1, loc=1, digest="", slot=v, confidence=0.9) for (k, v) in slots.items()];
     sk = skeleton_arch(p, tpl, subs);
     ids = [c["id"] for c in sk["components"]];
